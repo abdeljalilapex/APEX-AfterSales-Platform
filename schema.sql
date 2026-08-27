@@ -131,9 +131,37 @@ CREATE TABLE fournisseurs (
     fiabilite_pct       NUMERIC(5,2)
 );
 
+-- ============================================================
+-- FOURNISSEURS_MAPPING_EXTERNE (ADR-043) — table de correspondance entre
+-- le code fournisseur d'un ERP externe (ex: COFOURN d'AtlasCom) et
+-- fournisseurs.id (UUID interne APEX). Structure uniquement à ce stade,
+-- reste VIDE : le rapprochement réel nécessite les données fournisseurs
+-- réelles d'AtlasCom, non disponibles à cette session (prévu comme
+-- chantier séparé, volontairement non commencé ici).
+--
+-- Note (constatée, pas corrigée) : fournisseurs n'a pas de concession_id
+-- (table globale). Cette table de correspondance, elle, est scoping par
+-- concession_id — un même code externe (ex: "FRN001") peut désigner un
+-- fournisseur différent selon l'ERP/la concession source. Le fournisseur
+-- APEX cible, lui, reste un enregistrement global.
+-- ============================================================
+CREATE TABLE fournisseurs_mapping_externe (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code_externe    TEXT NOT NULL,
+    source_erp      TEXT NOT NULL,   -- ex: 'atlascom' — générique, pas codé en dur pour un seul ERP
+    concession_id   UUID NOT NULL REFERENCES concessions(id),
+    fournisseur_id  UUID NOT NULL REFERENCES fournisseurs(id),
+    UNIQUE (code_externe, source_erp, concession_id)
+);
+
 CREATE TABLE pieces (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     designation     TEXT NOT NULL,
+    -- ADR-043 : identifiant externe stable, générique (pas spécifique à
+    -- AtlasCom), condition pour rapprocher un article ERP d'une ligne
+    -- `pieces` de façon fiable entre deux synchronisations, sans dépendre
+    -- de la désignation textuelle (fragile : fautes de frappe, reformulations).
+    code_externe    TEXT,
     prix_catalogue  NUMERIC(10,2) NOT NULL CHECK (prix_catalogue >= 0),
     fournisseur_id  UUID REFERENCES fournisseurs(id),
     stock           INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
