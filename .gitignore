@@ -1,0 +1,17 @@
+# --- Sécurité : secrets et identifiants, ne jamais committer ---
+.env
+.env.*
+*.key
+*.pem
+*_secret*
+*credentials*
+DATABASE_URL.txt
+
+# --- Fichiers Python courants ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Fichiers système ---
+.DS_Store
